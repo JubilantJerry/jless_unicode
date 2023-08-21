@@ -522,6 +522,9 @@ impl Row {
     pub fn is_string(&self) -> bool {
         self.value.is_string()
     }
+    pub fn get_unescaped_string(&self) -> &str {
+        self.value.get_unescaped_string()
+    }
     pub fn is_opening_of_container(&self) -> bool {
         self.value.is_opening_of_container()
     }
@@ -614,7 +617,9 @@ pub enum Value {
     Null,
     Boolean,
     Number,
-    String,
+    String {
+        unescaped: String,
+    },
     EmptyObject,
     EmptyArray,
     OpenContainer {
@@ -644,7 +649,14 @@ impl Value {
     }
 
     pub fn is_string(&self) -> bool {
-        matches!(self, Value::String)
+        matches!(self, Value::String { .. })
+    }
+
+    pub fn get_unescaped_string(&self) -> &str {
+        match self {
+            Value::String {unescaped} => &unescaped,
+            _ => "",
+        }
     }
 
     pub fn container_type(&self) -> Option<ContainerType> {

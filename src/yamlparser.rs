@@ -2,6 +2,7 @@ use yaml_rust::yaml::{Array, Hash, Yaml};
 use yaml_rust::YamlLoader;
 
 use crate::flatjson::{ContainerType, Index, OptionIndex, Row, Value};
+use crate::jsonstringunescaper::unescape_json_string;
 
 struct YamlParser {
     parents: Vec<Index>,
@@ -92,7 +93,11 @@ impl YamlParser {
     }
 
     fn parse_string(&mut self, s: String) -> usize {
-        let row_index = self.create_row(Value::String);
+        let unescaped = match unescape_json_string(&s) {
+            Ok(unescaped) => unescaped,
+            Err(_) => s.clone()
+        };
+        let row_index = self.create_row(Value::String{unescaped});
 
         // Escape newlines.
         let s = s.replace('\n', "\\n");

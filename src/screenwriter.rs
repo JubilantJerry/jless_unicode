@@ -289,7 +289,7 @@ impl ScreenWriter {
         Ok(())
     }
 
-    fn line_primitive_value_ref<'a, 'b>(
+    fn line_primitive_value_ref<'a: 'b, 'b>(
         &'a self,
         row: &'a Row,
         viewer: &'b JsonViewer,
@@ -298,8 +298,8 @@ impl ScreenWriter {
             Value::OpenContainer { .. } | Value::CloseContainer { .. } => None,
             _ => {
                 let range = row.range.clone();
-                if let Value::String = &row.value {
-                    Some(&viewer.flatjson.1[range.start + 1..range.end - 1])
+                if let Value::String { unescaped } = &row.value {
+                    Some(&unescaped[1..unescaped.len() - 1])
                 } else {
                     Some(&viewer.flatjson.1[range])
                 }
@@ -554,7 +554,7 @@ impl ScreenWriter {
             }
 
             let mut value_range_start = range.start;
-            if let Value::String = &json_row.value {
+            if let Value::String { .. } = &json_row.value {
                 value_range_start += 1;
             }
 

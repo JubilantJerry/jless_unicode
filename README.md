@@ -17,26 +17,21 @@ and can be installed as a single standalone binary.
   around and viewing data.
 - Full regex-based search for finding exactly the data you're looking
   for.
+- This fork modifies the code to display Unicode directly on the command
+  line, which can be useful if you are exploring non-English textual
+  data stored as json files.
 
 `jless` currently supports macOS and Linux. Windows support is planned.
 
 ## Installation
 
-You can install `jless` using various package managers:
+You can install this version of `jless` from source (requires [Rust toolchain](https://www.rust-lang.org/tools/install))
 
-| Operating System / Package Manager | Command |
-| ---------------------------------- | ------- |
-| macOS - [HomeBrew](https://formulae.brew.sh/formula/jless) | `brew install jless`      |
-| macOS - [MacPorts](https://ports.macports.org/port/jless/) | `sudo port install jless` |
-| Linux - [HomeBrew](https://formulae.brew.sh/formula/jless) | `brew install jless`      |
-| [Arch Linux](https://archlinux.org/packages/extra/x86_64/jless/)     | `pacman -S jless`         |
-| [Void Linux](https://github.com/void-linux/void-packages/tree/master/srcpkgs/jless) | `sudo xbps-install jless` |
-| [NetBSD](https://pkgsrc.se/textproc/jless/)                | `pkgin install jless`     |
-| [FreeBSD](https://freshports.org/textproc/jless/)          | `pkg install jless`       |
-| From source (Requires [Rust toolchain](https://www.rust-lang.org/tools/install))       | `cargo install jless`       |
-
-The [releases](https://github.com/PaulJuliusMartinez/jless/releases)
-page also contains links to binaries for various architectures.
+```
+git clone https://github.com/JubilantJerry/jless_unicode.git
+cd jless_unicode
+cargo install --path .
+```
 
 ## Dependencies
 

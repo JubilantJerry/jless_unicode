@@ -509,6 +509,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
 
         // Strip quotes from strings.
         if self.row.is_string() {
+            value_ref = self.row.get_unescaped_string();
             value_ref = &value_ref[1..value_ref.len() - 1];
             quoted = true;
         }
@@ -607,6 +608,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
 
         // Strip quotes from strings.
         if self.row.is_string() {
+            value_ref = self.row.get_unescaped_string();
             value_ref = &value_ref[1..value_ref.len() - 1];
             value_range.start += 1;
             value_range.end -= 1;
@@ -659,7 +661,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             Value::Null => terminal::LIGHT_BLACK,
             Value::Boolean => terminal::YELLOW,
             Value::Number => terminal::MAGENTA,
-            Value::String => terminal::GREEN,
+            Value::String { .. } => terminal::GREEN,
             Value::EmptyObject => terminal::WHITE,
             Value::EmptyArray => terminal::WHITE,
             _ => unreachable!(),
@@ -1040,10 +1042,9 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
                 container_type.collapsed_preview()
             }
             Value::CloseContainer { .. } => panic!("CloseContainer cannot be child value."),
-            Value::String => {
+            Value::String { unescaped } => {
                 quoted = true;
-                let range = row.range.clone();
-                &self.flatjson.1[range.start + 1..range.end - 1]
+                &unescaped[1..unescaped.len() - 1]
             }
             _ => &self.flatjson.1[row.range.clone()],
         };
