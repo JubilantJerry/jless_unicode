@@ -6,6 +6,8 @@ use crate::search::MatchRangeIter;
 use crate::terminal;
 use crate::terminal::{Style, Terminal};
 use crate::truncatedstrview::TruncatedStrView;
+use crate::jsonstringunescaper::escape_json_string;
+use crate::jsonstringunescaper::find_range_from_escaped;
 
 // This module is responsible for highlighting text in the
 // appropriate colors when we print it out.
@@ -121,6 +123,7 @@ pub fn highlight_truncated_str_view(
     highlight_style: &Style,
     matches_iter: &mut Option<&mut Peekable<MatchRangeIter<'_>>>,
     focused_search_match: &Range<usize>,
+    need_escape: bool,
 ) -> fmt::Result {
     let mut leading_ellipsis = false;
     let mut replacement_character = false;
@@ -130,8 +133,9 @@ pub fn highlight_truncated_str_view(
         leading_ellipsis = tr.print_leading_ellipsis();
         replacement_character = tr.showing_replacement_character;
         trailing_ellipsis = tr.print_trailing_ellipsis(s);
+        let len_escaped = escape_json_string(&s[..tr.start]).len();
         s = &s[tr.start..tr.end];
-        str_range_start = str_range_start.map(|start| start + tr.start);
+        str_range_start = str_range_start.map(|start| start + len_escaped);
     }
 
     if leading_ellipsis {
@@ -157,6 +161,7 @@ pub fn highlight_truncated_str_view(
         highlight_style,
         matches_iter,
         focused_search_match,
+        need_escape,
     )?;
 
     // Print trailing ellipsis
@@ -176,6 +181,7 @@ pub fn highlight_matches(
     highlight_style: &Style,
     matches_iter: &mut Option<&mut Peekable<MatchRangeIter<'_>>>,
     focused_search_match: &Range<usize>,
+    need_escape: bool,
 ) -> fmt::Result {
     if str_range_start.is_none() {
         out.set_style(style)?;
@@ -184,10 +190,12 @@ pub fn highlight_matches(
     }
 
     let mut start_index = str_range_start.unwrap();
+    let string_end = if need_escape {
+        start_index + escape_json_string(s).len()
+    } else { start_index + s.len() };
 
     while !s.is_empty() {
         // Initialize the next match to be a fake match past the end of the string.
-        let string_end = start_index + s.len();
         let mut match_start = string_end;
         let mut match_end = string_end;
         let mut match_is_focused_match = false;
@@ -206,11 +214,18 @@ pub fn highlight_matches(
             matches_iter.as_mut().unwrap().next();
         }
 
+        let match_range = Range {
+            start: match_start - start_index,
+            end: match_end - start_index
+        };
+        let highlight_ranges = if need_escape {
+            find_range_from_escaped(s, match_range)
+        } else { (match_range.clone(), match_range) };
+
         // Print out stuff before the start of the match, if there's any.
         if start_index < match_start {
-            let print_end = match_start - start_index;
             out.set_style(style)?;
-            write!(out, "{}", &s[..print_end])?;
+            write!(out, "{}", &s[..highlight_ranges.0.start])?;
         }
 
         // Highlight the matching substring.
@@ -220,14 +235,12 @@ pub fn highlight_matches(
             } else {
                 out.set_style(highlight_style)?;
             }
-            let print_start = match_start - start_index;
-            let print_end = match_end - start_index;
-            write!(out, "{}", &s[print_start..print_end])?;
+            write!(out, "{}", &s[highlight_ranges.0.clone()])?;
         }
 
         // Update start_index and s
-        s = &s[(match_end - start_index)..];
-        start_index = match_end;
+        s = &s[highlight_ranges.0.end..];
+        start_index += highlight_ranges.1.end;
     }
 
     Ok(())

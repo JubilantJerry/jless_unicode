@@ -379,6 +379,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             highlighted_style,
             &mut matches,
             self.focused_search_match,
+            false,
         )?;
 
         // Print out the label itself
@@ -391,6 +392,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             highlighted_style,
             &mut matches,
             self.focused_search_match,
+            false,
         )?;
 
         // Print out end of label
@@ -402,6 +404,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             highlighted_style,
             &mut matches,
             self.focused_search_match,
+            false,
         )?;
 
         // Print out separator between label and value
@@ -413,6 +416,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             &highlighting::SEARCH_MATCH_HIGHLIGHTED,
             &mut matches,
             self.focused_search_match,
+            false,
         )?;
 
         used_space += delimiter.width();
@@ -561,6 +565,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             &truncated_view,
             Some(self.row.range.clone()),
             (&style, &highlighting::SEARCH_MATCH_HIGHLIGHTED),
+            self.row.is_string()
         )?;
 
         if self.trailing_comma {
@@ -995,6 +1000,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
                 &truncated_view,
                 Some(key_range.clone()),
                 highlighting::PREVIEW_STYLES,
+                false
             )?;
 
             used_space += 2;
@@ -1100,6 +1106,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             &highlighting::GRAY_INVERTED_STYLE,
             &mut self.search_matches.as_mut(),
             focused_search_match,
+            row.is_string(),
         )?;
 
         if quoted {
@@ -1136,6 +1143,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
         truncated_view: &TruncatedStrView,
         str_range: Option<Range<usize>>,
         styles: (&Style, &Style),
+        need_escape: bool,
     ) -> fmt::Result {
         let mut str_open_delimiter_range_start = None;
         let mut str_range_start = None;
@@ -1164,6 +1172,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             styles.1,
             &mut self.search_matches.as_mut(),
             focused_search_match,
+            need_escape
         )?;
 
         self.highlight_str(delimiter.right(), str_close_delimiter_range_start, styles)?;
@@ -1192,6 +1201,7 @@ impl<'a, 'b> LinePrinter<'a, 'b> {
             styles.1,
             &mut self.search_matches.as_mut(),
             focused_search_match,
+            false
         )
     }
 }

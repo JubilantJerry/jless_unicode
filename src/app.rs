@@ -22,6 +22,7 @@ use crate::screenwriter::{MessageSeverity, ScreenWriter};
 use crate::search::{JumpDirection, SearchDirection, SearchState};
 use crate::types::TTYDimensions;
 use crate::viewer::{Action, JsonViewer, Mode};
+use crate::jsonstringunescaper::escape_unicode_for_regex;
 
 pub struct App {
     viewer: JsonViewer,
@@ -662,7 +663,8 @@ impl App {
             SearchDirection::Reverse => "?",
         };
 
-        let search_term = self.readline(prompt_str, "search input")?;
+        let search_term = escape_unicode_for_regex(
+            &self.readline(prompt_str, "search input")?);
 
         // In vim, /<CR> or ?<CR> is a longcut for repeating the previous search.
         if search_term.is_empty() {

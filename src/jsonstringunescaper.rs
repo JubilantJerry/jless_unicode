@@ -1,5 +1,6 @@
 use std::fmt;
 use std::fmt::Write;
+use std::ops::Range;
 
 #[derive(Debug)]
 pub struct UnescapeError {
@@ -161,6 +162,97 @@ pub fn safe_unescape_json_string(s: &str) -> Result<String, UnescapeError> {
                     // regular tests for it
 pub fn unsafe_unescape_json_string(s: &str) -> Result<String, UnescapeError> {
     unescape_json_string(s, false)
+}
+
+pub fn unescape_json_string_unwrap(s: &str) -> String {
+    match unescape_json_string(s, true) {
+        Ok(unescaped) => unescaped,
+        Err(_) => s.to_owned()
+    }
+}
+
+fn escape_json_unicode(
+        escaped: &mut String, c: char,
+        backslash: &str, utf16_buf: &mut [u16]) {
+    let encoded = c.encode_utf16(utf16_buf);
+    for utf16 in encoded {
+        *escaped += backslash;
+        write!(escaped, "u{:04x}", utf16).unwrap();
+    }
+}
+
+// Source: https://www.reddit.com/r/rust/comments/i4bg0q/comment/g0hl58g/?utm_source=share&utm_medium=web2x&context=3
+pub fn escape_json_string(src: &str) -> String {
+    let mut escaped = String::with_capacity(src.len());
+    let mut utf16_buf = [0u16; 2];
+    for c in src.chars() {
+        match c {
+            '\x08' => { escaped += "\\b" },
+            '\x0c' => { escaped += "\\f" },
+            '\n' => { escaped += "\\n" },
+            '\r' => { escaped += "\\r" },
+            '\t' => { escaped += "\\t" },
+            '"' => { escaped += "\\\"" },
+            '\\' => { escaped += "\\" },
+            ' ' => { escaped += " " },
+            c if c.is_ascii_graphic() => escaped.push(c),
+            c => escape_json_unicode(&mut escaped, c, "\\", &mut utf16_buf),
+        }
+    }
+    escaped
+}
+
+pub fn escape_unicode_for_regex(src: &str) -> String {
+    let mut escaped = String::with_capacity(src.len());
+    let mut utf16_buf = [0u16; 2];
+    for c in src.chars() {
+        match c {
+            c if c.is_ascii() => escaped.push(c),
+            c => escape_json_unicode(&mut escaped, c, "\\\\", &mut utf16_buf),
+        }
+    }
+    escaped
+}
+
+pub fn find_range_from_escaped(
+        unescaped: &str, escaped_range: Range<usize>) ->
+        (Range<usize>, Range<usize>) {
+    let mut start_escaped = 0;
+    let mut start_unescaped = 0;
+    let mut char_iter = unescaped.chars().peekable();
+    loop {
+        let len_unescaped;
+        match char_iter.peek() {
+            Some(v) => { len_unescaped = v.len_utf8(); }
+            None => { break; }
+        }
+        let len_escaped = escape_json_string(&unescaped[
+            start_unescaped..start_unescaped + len_unescaped]).len();
+        let next_pos = start_escaped + len_escaped;
+        if next_pos > escaped_range.start { break };
+        char_iter.next();
+        start_escaped += len_escaped;
+        start_unescaped += len_unescaped;
+    }
+    let mut end_escaped = start_escaped;
+    let mut end_unescaped = start_unescaped;
+    loop {
+        let len_unescaped;
+        match char_iter.peek() {
+            Some(v) => { len_unescaped = v.len_utf8(); }
+            None => { break; }
+        }
+        let len_escaped = escape_json_string(&unescaped[
+            end_unescaped..end_unescaped + len_unescaped]).len();
+        end_escaped += len_escaped;
+        end_unescaped += len_unescaped;
+        char_iter.next();
+        let next_pos = end_escaped + len_escaped;
+        if next_pos >= escaped_range.end { break };
+    }
+    return (
+        Range{start: start_unescaped, end: end_unescaped},
+        Range{start: start_escaped, end: end_escaped});
 }
 
 fn is_control(ch: char) -> bool {

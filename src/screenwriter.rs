@@ -19,6 +19,7 @@ use crate::terminal::{AnsiTerminal, Terminal};
 use crate::truncatedstrview::{TruncatedStrSlice, TruncatedStrView};
 use crate::types::TTYDimensions;
 use crate::viewer::{JsonViewer, Mode};
+use crate::jsonstringunescaper::find_range_from_escaped;
 
 pub struct ScreenWriter {
     pub stdout: RawTerminal<Box<dyn std::io::Write>>,
@@ -558,10 +559,15 @@ impl ScreenWriter {
                 value_range_start += 1;
             }
 
-            let offset_focused_range = Range {
+            let mut offset_focused_range = Range {
                 start: focused_search_range.start.saturating_sub(value_range_start),
                 end: focused_search_range.end - value_range_start,
             };
+
+            if let Value::String { unescaped } = &json_row.value {
+                offset_focused_range = find_range_from_escaped(
+                    unescaped, offset_focused_range).0;
+            }
 
             tsv = tsv.focus(value_ref, &offset_focused_range);
 

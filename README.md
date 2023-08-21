@@ -19,7 +19,7 @@ and can be installed as a single standalone binary.
   for.
 - This fork modifies the code to display Unicode directly on the command
   line, which can be useful if you are exploring non-English textual
-  data stored as json files.
+  data stored as json files. Currently, dict keys do not display Unicode.
 
 `jless` currently supports macOS and Linux. Windows support is planned.
 

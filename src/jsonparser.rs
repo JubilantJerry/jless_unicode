@@ -2,7 +2,7 @@ use logos::{Lexer, Logos};
 
 use crate::flatjson::{ContainerType, Index, OptionIndex, Row, Value};
 use crate::jsontokenizer::JsonToken;
-use crate::jsonstringunescaper::unescape_json_string;
+use crate::jsonstringunescaper::unescape_json_string_unwrap;
 
 struct JsonParser<'a> {
     tokenizer: Lexer<'a, JsonToken>,
@@ -402,10 +402,7 @@ impl<'a> JsonParser<'a> {
 
     fn parse_string(&mut self) -> Result<usize, String> {
         let slice = self.tokenizer.slice();
-        let unescaped = match unescape_json_string(slice) {
-            Ok(unescaped) => unescaped,
-            Err(_) => (*slice).to_string()
-        };
+        let unescaped = unescape_json_string_unwrap(slice);
         let row_index = self.create_row(Value::String{unescaped});
 
         // The token includes the quotation marks.
